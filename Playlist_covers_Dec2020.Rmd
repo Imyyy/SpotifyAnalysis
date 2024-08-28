@@ -1,0 +1,191 @@
+---
+title: "Spotify analysis"
+output: html_notebook
+---
+
+Data using the strava API. Going to request the data download also, see how that goes. 
+
+Website for client_ID: https://developer.spotify.com/dashboard/applications
+New medium tutorial: https://rafabelokurows.medium.com/analyzing-spotify-songs-data-with-r-programming-language-a-quick-rundown-e7e247b91699
+
+```{r packages, include=FALSE}
+library(devtools)
+# install_github("charlie86/spotifyr")
+library(spotifyr)
+library(tidyverse)
+library(lubridate)
+library(spotifyr)
+library(magick)
+# library(imager)
+library(scales) 
+library(showtext) # I added this in
+```
+
+```{r spotify_setup}
+Sys.setenv(SPOTIFY_CLIENT_ID = 'c61c9eacc62348afb0c7b5a45f323d64') # same a year later
+Sys.setenv(SPOTIFY_CLIENT_SECRET = 'baea283d1f174bf78809115f018ae993')
+username <- "imy147"
+access_token <- get_spotify_authorization_code() # Not sure if this is needed
+```
+
+```{r}
+# New feature
+top <- get_my_top_artists_or_tracks(type = 'artists', time_range = 'long_term', limit = 50) %>% 
+    select(name, genres) %>% 
+    rowwise %>% 
+    mutate(genres = paste(genres, collapse = ', ')) %>% 
+    ungroup # removed kable
+```
+
+
+```{r 2019_playlists}
+playlist_id <- "0WoCSljHvzavVQJyAvCCYF" 
+#G D S = spotify:playlist:1fusY0JyJ1471UckBxsQsJ
+#Canada 2019 =spotify:playlist:0xtwWYoMPvOfQB0mgkJTZQ
+#DID = spotify:playlist:5Im4bcnijkzuNklI5pbnl3
+#CC = spotify:playlist:0bf0dgzr3nCFYOPMmLIWIM
+#FYP = spotify:playlist:0va8UKDUxo66aYrJmladkS
+#Bio = spotify:playlist:2CDtAeZKqqHkpJS23wUyg7 spotify:playlist:2CDtAeZKqqHkpJS23wUyg7
+#Homehome = spotify:playlist:2CDtAeZKqqHkpJS23wUyg7 spotify:playlist:6PeoxOqBsJH3VDUHZs13sx
+#Frisbee womens indoor nats = spotify:playlist:7frpLkZcpJjECuPYo0Wsyg
+
+p_name <- c("concentration" , " dD Women's Burgess Hill adventure", "D Y B",
+            "Run165", "G D S", "Canada 2019", "D I D", "Country concentration", 
+            "FYP Concentration", "Bio", "HomeHome", 
+            "Frisbee Womens Indoor Nats Glasgow")
+p_id <- c("3o2BfNZ6JFHKt8MjfxL616", "0WoCSljHvzavVQJyAvCCYF", "604AyaWTIM1WIF28fI2kGl",
+          "7AbwoYgj7W2tGJt8DuDIbT", "1fusY0JyJ1471UckBxsQsJ", "0xtwWYoMPvOfQB0mgkJTZQ",
+          "5Im4bcnijkzuNklI5pbnl3", "0bf0dgzr3nCFYOPMmLIWIM", "0va8UKDUxo66aYrJmladkS",
+          "2CDtAeZKqqHkpJS23wUyg7", "6PeoxOqBsJH3VDUHZs13sx", "7frpLkZcpJjECuPYo0Wsyg")
+playlists <- data.frame(p_name, p_id)
+playlists
+```
+
+```{r get_features}
+features <- get_playlist_audio_features(username = username, playlist_uris = playlist_id) %>% 
+  select(playlist_name, playlist_id, track_name = track.name, 
+         track_id = track.id, popularity = track.popularity,
+         danceability, energy, speechiness, acousticness,
+         instrumentalness, liveness, valence,
+         key_name, mode_name, key_mode, tempo)
+```
+
+# Top tracks 2020
+```{r}
+my_id <- 'imy147'
+my_playlists <- get_user_playlists(my_id,authorization = access_token)
+
+top2020 <- my_playlists %>% filter(name %in% c('Your Top Songs 2020'))
+top2020_tracks <- get_playlist_tracks(top2020$id)
+top2020_features <- get_track_audio_features(top2020_tracks$track.id)
+top2020 <- top2020_tracks %>% left_join(top2020_features, by=c('track.id' = 'id'))
+# colnames(top2020)
+```
+Can I make that in to a function?
+```{r}
+dataset_name <- function(year){
+  year <- toString(year)
+  print(paste('Your Top Songs 2019'))
+  df <- my_playlists %>% filter(name %in% c(paste('Your Top Songs', year)))
+  df_tracks <- get_playlist_tracks(df$id)
+  df_features <- get_track_audio_features(df_tracks$track.id)
+  df <- df_tracks %>% left_join(df_features, by=c('track.id' = 'id'))
+  
+  return(df)
+}
+
+top2020 <- dataset_name(2020)
+# top2019 <- dataset_name(2019) # Not in list 
+# top2018 <- dataset_name(2018)
+# top2017 <- dataset_name(2017)
+# top2016 <- dataset_name(2016)
+# str(top2020)
+```
+```{r}
+colnames(top2020)
+```
+Possible options: "danceability" "energy" "key" "loudness" "mode" "speechiness" "acousticness" "instrumentalness" "liveness" "valence" "tempo"
+```{r}
+ggplot(data = top2020, aes(x=speechiness, y= acousticness)) + geom_density2d() + theme_bw()
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+
+# Plot set up for playilst covers
+
+```{r colours}
+red <- "energy" 
+green <- "valence" 
+blue <- "danceability" 
+height_feature <- "tempo"
+
+## Possible inputs
+  #valence = positiveness
+  #instrumentalness
+  #speechiness
+  #energy
+  #danceability
+
+## Make sure that dplyr can get the column names as they are stored in a character vector
+red <- ensym(red)
+green <- ensym(green)
+blue <- ensym(blue)
+```
+
+
+
+```{r theme_palette, include=FALSE}
+theme_palette <- function () { 
+  theme_bw(base_size=10, base_family="Avenir") %+replace% 
+    theme(
+      panel.background  = element_blank(),
+      panel.border = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major = element_blank(),
+      plot.background = element_rect(fill = "black"), 
+      plot.margin = margin(5),
+      axis.title = element_blank(),
+      axis.ticks = element_blank(),
+      axis.text = element_blank()
+    )
+}
+
+# Create the cover palette based on the theme_palette
+cover_palette <- features %>% 
+  rowwise() %>% 
+  mutate(color_hsv = rgb2hsv(r = !!red, g = !!green, b = !!blue, maxColorValue = 1) %>% list(),
+         color = rgb(r = !!red, g = !!green, b = !!blue, maxColorValue = 1)) %>% 
+  unnest_wider(color_hsv) %>% 
+  arrange(...1, ...2) %>% 
+  rowid_to_column(var = "id")
+```
+
+# Plots
+
+```{r}
+ggplot(cover_palette, aes(id, get(height_feature), fill = color)) +
+  geom_bar(stat = "identity") +
+  theme_palette() + 
+  scale_fill_identity() +
+  scale_x_discrete() + 
+  scale_y_continuous(breaks = NULL) + 
+  #coord_polar() + 
+  #expand_limits(y = -1) 
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+

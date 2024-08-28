@@ -1,0 +1,43 @@
+---
+title: "Data download 1"
+output: html_notebook
+---
+
+```{r}
+library(devtools)
+library(spotifyr)
+library(tidyverse)
+library(lubridate)
+library(spotifyr)
+library(magick)
+library(scales) 
+# library(RJSONIO)
+library(rjson)
+```
+
+
+```{r}
+play1 <- fromJSON(file = "/Users/imytest/Library/Mobile Documents/com~apple~CloudDocs/Documents/Projects_for_fun/Spotify/custom_playlist_cover/Data/Data_201206/Playlist1.json")
+# stream1 <- as.data.frame(stream1)
+play11 <- play1[1]
+```
+
+
+```{r}
+stream1 <- fromJSON(file = "/Users/imytest/Library/Mobile Documents/com~apple~CloudDocs/Documents/Projects_for_fun/Spotify/custom_playlist_cover/Data/Data_201206/StreamingHistory0.json")
+```
+
+
+```{r}
+for (i in seq(1, 10, by=1)){
+  print(i)
+}
+```
+
+
+```{r}
+stream1
+stream1[1]$endTime
+```
+
+
